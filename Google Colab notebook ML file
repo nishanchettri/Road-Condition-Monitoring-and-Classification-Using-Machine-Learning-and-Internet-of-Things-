@@ -1,0 +1,221 @@
+# importing necessary libraries
+from sklearn import datasets
+from sklearn.metrics import confusion_matrix
+from sklearn.model_selection import train_test_split from sklearn.tree import DecisionTreeClassifier from sklearn.svm import SVC
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.naive_bayes import GaussianNB
+from sklearn.linear_model import LogisticRegression
+import pandas as pd import numpy as np
+
+
+In [31]:
+
+df=pd.read_csv('random_paths_ml.csv')
+
+
+In [32]:
+
+# X -> features, y -> label
+X = df[['std_dev(z)','max(z)','min(z)','range(z)','rms(z)','average_abs(z)','sum_thres_z',
+'std_dev(y)','max(y)','min(y)','range(y)','rms(y)','average_abs(y)','std_dev(x)','max(x)',' min(x)','range(x)','rms(x)','average_abs(x)']]
+y = df['Category']
+
+
+In [33]:
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, random_state = 0)
+ 
+
+In [34]:
+
+def get_decision_tree_algo():
+return DecisionTreeClassifier(max_depth = 2)
+
+
+def get_svm_algo():
+return SVC(kernel = 'linear', C = 1)
+
+
+def get_knn_algo():
+return KNeighborsClassifier(n_neighbors = 7)
+
+
+def get_gnb_algo():
+return GaussianNB()
+
+
+def get_lr_algo():
+return LogisticRegression()
+
+
+def get_training_algo(algo_name):
+if algo_name == 'DT': # Decision Tree
+return get_decision_tree_algo()
+elif algo_name == 'SVM': # Support Vector Machine
+return get_svm_algo()
+elif algo_name == 'KNN': # K-Nearest Neighbor
+return get_knn_algo()
+elif algo_name == 'GNB': # Gaussian Naive Baye's
+return get_gnb_algo()
+elif algo_name == 'LR' : # Logistic regression
+return get_lr_algo()
+else:
+raise ValueError(f'{algo_name} is not valid algo')
+ 
+
+In [35]:
+
+# Run for each model
+def display_metrics(algo_name, X_train, y_train): algo = get_training_algo(algo_name)
+
+# training
+model = algo.fit(X_train, y_train)
+
+
+# accuracy on X_test
+accuracy = algo.score(X_test, y_test)
+
+
+# Predictions for test dataset (unseen dataset) predictions = model.predict(X_test)
+
+# creating a confusion matrix
+con_mat = confusion_matrix(y_test, predictions) print('ALGO: '+algo_name)
+print(f'Accuracy: {accuracy:.2f}') print('Confusion Matrix:') print(con_mat)
+print('	')
+
+
+
+	Creating synthetic data for imbalanced classes
+
+
+In [36]:
+
+from collections import Counter from numpy import where import matplotlib.pyplot as plt import imblearn
+from imblearn.pipeline import Pipeline
+ 
+from imblearn.over_sampling import SMOTE
+from imblearn.under_sampling import RandomUnderSampler
+
+
+print(imblearn. version )
+Out [36]:
+
+0.6.2
+
+In [37]:
+
+train_counter = Counter(y_train) test_counter = Counter(y_test) print(train_counter) print(test_counter)
+Out [37]:
+
+Counter({'A': 47, 'B': 28, 'C': 9, 'D': 6})
+Counter({'A': 17, 'B': 6, 'C': 5, 'D': 2})
+
+
+In [38]:
+
+#oversampling over = SMOTE()
+
+X_train_new, y_train_new = over.fit_resample(X_train, y_train) train_new_counter = Counter(y_train_new)
+print(train_new_counter)
+Out [38]:
+
+Counter({‘A’: 47, ‘B’: 47, ‘D’: 47, ‘C’: 47})
+
+
+In [39]:
+
+algos = ['DT', 'SVM', 'KNN', 'GNB', 'LR']
+for algo in algos:
+ 
+display_metrics(algo, X_train_new, y_train_new)
+Out [39]:
+
+ALGO: DT
+Accuracy: 0.70 Confusion Matrix: [[16 1 0 0]
+[ 0	0	6	0]
+[ 0	0	3	2]
+[ 0	0	0	2]]
+-----			
+ALGO: SVM
+Accuracy: 0.87 Confusion Matrix: [[17 0 0 0]
+[ 1	5	0	0]
+[ 0	0	4	1]
+[ 0	0	2	0]]
+-----			
+ALGO: KNN
+Accuracy: 0.83 Confusion Matrix: [[17 0 0 0]
+[ 1	5	0	0]
+[ 0	1	2	2]
+[ 0	1	0	1]]
+-----			
+ALGO: GNB
+Accuracy: 0.83 Confusion Matrix: [[15 2 0 0]
+[ 1	5	0	0]
+[ 0	0	3	2]
+[ 0	0	0	2]]
+ 
+----- ALGO: LR
+Accuracy: 0.70 Confusion Matrix:
+[[14 3 0 0]
+
+[ 0	4	0	2]
+[ 0	1	2	2]
+[ 0	0	1	1]]
+-----			
+
+
+
+
+In [40]:
+#oversampling as well as undersampling over = SMOTE()
+
+under = RandomUnderSampler(sampling_strategy={'A':47,'B':28,'C':15,'D':12}) steps = [('o', over), ('u', under)]
+pipeline = Pipeline(steps=steps)
+X_train_new, y_train_new = pipeline.fit_resample(X_train, y_train) train_new_counter = Counter(y_train_new) print(train_new_counter)
+Out [40]:
+
+Counter({'A': 47, 'B': 28, 'C': 15, 'D': 12})
+In [41]:
+
+print(X_train.shape) print(X_train_new.shape) Out [41]:
+(90, 19)
+ 
+(102, 19)
+In [42]:
+
+algos = ['DT', 'SVM', 'KNN', 'GNB', 'LR']
+for algo in algos:
+display_metrics(algo, X_train_new, y_train_new)
+
+
+
+Out [42]: ALGO: DT
+Accuracy: 0.87 Confusion Matrix: [[16 1 0 0]
+[ 0	5	1	0]
+[ 0	0	5	0]
+[ 0	0	2	0]]
+-----			
+ALGO: SVM
+Accuracy: 0.83 Confusion Matrix: [[17 0 0 0]
+[ 2	4	0	0]
+[ 0	0	3	2]
+[ 0	0	1	1]]
+-----			
+ALGO: KNN
+Accuracy: 0.83 Confusion Matrix: [[17 0 0 0]
+[ 2	4	0	0]
+[ 0	1	4	0]
+[ 0	1	1	0]]
+-----			
+ 
+ALGO: GNB
+Accuracy: 0.90 Confusion Matrix: [[17 0 0 0]
+[ 1	5	0	0]
+[ 0	0	3	2]
+[ 0	0	0	2]]
+-----			
+ALGO: LR
+Accuracy: 0.73 Confusion Matrix: [[16 1 0 0]
+[ 2	2	0	2]
+[ 0	0	3	2]
+[ 0	0	1	1]]
